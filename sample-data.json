@@ -1,0 +1,76 @@
+{
+  "schemaVersion": 1,
+  "meta": {
+    "campaignName": "The Iron Crown",
+    "lastSavedAt": "2026-04-12T10:00:00.000Z"
+  },
+  "settings": {
+    "bands": [
+      { "id": "close-allies", "name": "Close Allies", "threshold": 20, "color": "#10b981" },
+      { "id": "friends", "name": "Friends", "threshold": 10, "color": "#4ade80" },
+      { "id": "acquaintances", "name": "Acquaintances", "threshold": 1, "color": "#bef264" }
+    ],
+    "degrade": { "amount": 1 },
+    "propagation": {
+      "enabled": true,
+      "nudgePerAffinityPoint": 2,
+      "triggerOnBand": "Friends",
+      "confirmBeforeApply": true
+    },
+    "localStorage": { "autosave": true },
+    "theme": "system"
+  },
+  "factions": {
+    "fac-crown": { "id": "fac-crown", "name": "Crown Loyalists", "description": "Sworn defenders of the Iron Throne.", "color": "#d4a017" },
+    "fac-smuggler": { "id": "fac-smuggler", "name": "Smugglers' Cove", "description": "Coastal traders who answer to no king.", "color": "#2a9d8f" },
+    "fac-sylvan": { "id": "fac-sylvan", "name": "Sylvan Court", "description": "Old guardians of the green wood.", "color": "#52b788" }
+  },
+  "factionEdges": {
+    "fac-crown::fac-sylvan": { "id": "fac-crown::fac-sylvan", "a": "fac-crown", "b": "fac-sylvan", "affinity": 2 },
+    "fac-crown::fac-smuggler": { "id": "fac-crown::fac-smuggler", "a": "fac-crown", "b": "fac-smuggler", "affinity": -2 },
+    "fac-smuggler::fac-sylvan": { "id": "fac-smuggler::fac-sylvan", "a": "fac-smuggler", "b": "fac-sylvan", "affinity": -1 }
+  },
+  "characters": {
+    "pc-aldric": { "id": "pc-aldric", "kind": "pc", "firstName": "Aldric", "lastName": "Voss", "class": "Fighter", "notes": "Party's de-facto face.", "factionIds": ["fac-crown"] },
+    "pc-mira": { "id": "pc-mira", "kind": "pc", "firstName": "Mira", "lastName": "Ashvale", "class": "Wizard", "notes": "Curious about ancient runes.", "factionIds": ["fac-sylvan"] },
+    "pc-jasper": { "id": "pc-jasper", "kind": "pc", "firstName": "Jasper", "lastName": "Crowe", "class": "Rogue", "notes": "Knows every back alley in the docks.", "factionIds": ["fac-smuggler"] },
+    "pc-sera": { "id": "pc-sera", "kind": "pc", "firstName": "Sera", "lastName": "Dawnmist", "class": "Cleric", "notes": "Devout but skeptical of the Crown's church.", "factionIds": [] },
+
+    "npc-castren": { "id": "npc-castren", "kind": "npc", "firstName": "Lady", "lastName": "Castren", "location": "Irongate", "notes": "Patron and information broker.", "factionIds": ["fac-crown"] },
+    "npc-rael": { "id": "npc-rael", "kind": "npc", "firstName": "Commander", "lastName": "Rael", "location": "Irongate", "notes": "Stern but fair garrison commander.", "factionIds": ["fac-crown"] },
+    "npc-tael": { "id": "npc-tael", "kind": "npc", "firstName": "Sister", "lastName": "Tael", "location": "Temple District", "notes": "Healer and gossip.", "factionIds": ["fac-crown"] },
+    "npc-elara": { "id": "npc-elara", "kind": "npc", "firstName": "Elara", "lastName": "Sylvan", "location": "Sylvan Glade", "notes": "Spokesperson of the Court.", "factionIds": ["fac-sylvan"] },
+    "npc-branwen": { "id": "npc-branwen", "kind": "npc", "firstName": "Branwen", "lastName": "Thornwood", "location": "Sylvan Glade", "notes": "Druid scout.", "factionIds": ["fac-sylvan"] },
+    "npc-dax": { "id": "npc-dax", "kind": "npc", "firstName": "Dax", "lastName": "Harrow", "location": "Smugglers' Cove", "notes": "Reliable fence.", "factionIds": ["fac-smuggler"] },
+    "npc-marta": { "id": "npc-marta", "kind": "npc", "firstName": "Marta", "lastName": "Veil", "location": "The Docks", "notes": "Captain of the Black Gull.", "factionIds": ["fac-smuggler"] },
+    "npc-kren": { "id": "npc-kren", "kind": "npc", "firstName": "Kren", "lastName": "the Blacksmith", "location": "Market District", "notes": "Gives good prices to friends.", "factionIds": [] },
+    "npc-harwick": { "id": "npc-harwick", "kind": "npc", "firstName": "Lord", "lastName": "Harwick", "location": "Throne City", "notes": "Power-hungry rival noble.", "factionIds": ["fac-crown"] },
+    "npc-archivist": { "id": "npc-archivist", "kind": "npc", "firstName": "The", "lastName": "Archivist", "location": "Grand Library", "notes": "Knows everyone, trusts no one.", "factionIds": ["fac-sylvan", "fac-crown"] }
+  },
+  "relationships": {
+    "npc-tael::pc-aldric": { "id": "npc-tael::pc-aldric", "a": "npc-tael", "b": "pc-aldric", "value": 22, "notes": "Saved each other at the temple raid.", "history": [{ "at": "2026-04-08T15:00:00.000Z", "delta": 5, "valueBefore": 17, "valueAfter": 22, "reason": "manual-edit" }] },
+    "pc-aldric::pc-mira": { "id": "pc-aldric::pc-mira", "a": "pc-aldric", "b": "pc-mira", "value": 24, "notes": "Trust forged in the catacombs.", "history": [] },
+    "npc-castren::pc-aldric": { "id": "npc-castren::pc-aldric", "a": "npc-castren", "b": "pc-aldric", "value": 14, "notes": "Patron of the party.", "history": [] },
+    "npc-kren::pc-aldric": { "id": "npc-kren::pc-aldric", "a": "npc-kren", "b": "pc-aldric", "value": 12, "notes": "Drinks at the same tavern.", "history": [] },
+    "npc-rael::pc-aldric": { "id": "npc-rael::pc-aldric", "a": "npc-rael", "b": "pc-aldric", "value": 8, "notes": "Working relationship.", "history": [] },
+    "pc-aldric::pc-sera": { "id": "pc-aldric::pc-sera", "a": "pc-aldric", "b": "pc-sera", "value": 16, "notes": "Battle buddies.", "history": [] },
+    "pc-aldric::pc-jasper": { "id": "pc-aldric::pc-jasper", "a": "pc-aldric", "b": "pc-jasper", "value": 4, "notes": "Wary of his loyalties.", "history": [] },
+    "npc-harwick::pc-aldric": { "id": "npc-harwick::pc-aldric", "a": "npc-harwick", "b": "pc-aldric", "value": -22, "notes": "Bitter political enemy.", "history": [{ "at": "2026-04-12T10:00:00.000Z", "delta": -1, "valueBefore": -21, "valueAfter": -22, "reason": "degrade-all" }] },
+
+    "npc-elara::pc-mira": { "id": "npc-elara::pc-mira", "a": "npc-elara", "b": "pc-mira", "value": 18, "notes": "Mentor and student.", "history": [] },
+    "npc-branwen::pc-mira": { "id": "npc-branwen::pc-mira", "a": "npc-branwen", "b": "pc-mira", "value": 11, "notes": "Sparring partners.", "history": [] },
+    "npc-archivist::pc-mira": { "id": "npc-archivist::pc-mira", "a": "npc-archivist", "b": "pc-mira", "value": 7, "notes": "Frequent visitor to the library.", "history": [] },
+    "pc-jasper::pc-mira": { "id": "pc-jasper::pc-mira", "a": "pc-jasper", "b": "pc-mira", "value": -3, "notes": "Different worldviews.", "history": [] },
+    "npc-rael::pc-mira": { "id": "npc-rael::pc-mira", "a": "npc-rael", "b": "pc-mira", "value": -6, "notes": "Suspicious of arcane folk.", "history": [] },
+
+    "npc-dax::pc-jasper": { "id": "npc-dax::pc-jasper", "a": "npc-dax", "b": "pc-jasper", "value": 23, "notes": "Childhood friend.", "history": [] },
+    "npc-marta::pc-jasper": { "id": "npc-marta::pc-jasper", "a": "npc-marta", "b": "pc-jasper", "value": 13, "notes": "Owes him a favor.", "history": [] },
+    "npc-castren::pc-jasper": { "id": "npc-castren::pc-jasper", "a": "npc-castren", "b": "pc-jasper", "value": -12, "notes": "Caught stealing from her once.", "history": [] },
+    "npc-rael::pc-jasper": { "id": "npc-rael::pc-jasper", "a": "npc-rael", "b": "pc-jasper", "value": -15, "notes": "Has an outstanding warrant.", "history": [] },
+
+    "pc-mira::pc-sera": { "id": "pc-mira::pc-sera", "a": "pc-mira", "b": "pc-sera", "value": 9, "notes": "Curious about each other's faiths.", "history": [] },
+    "pc-jasper::pc-sera": { "id": "pc-jasper::pc-sera", "a": "pc-jasper", "b": "pc-sera", "value": 2, "notes": "Begrudging respect.", "history": [] },
+    "npc-tael::pc-sera": { "id": "npc-tael::pc-sera", "a": "npc-tael", "b": "pc-sera", "value": 19, "notes": "Sisters in faith.", "history": [] },
+    "npc-archivist::pc-sera": { "id": "npc-archivist::pc-sera", "a": "npc-archivist", "b": "pc-sera", "value": -2, "notes": "Disagreement over scripture.", "history": [] }
+  }
+}
