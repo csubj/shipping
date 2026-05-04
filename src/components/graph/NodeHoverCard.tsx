@@ -13,9 +13,13 @@ export function NodeHoverCard({ characterId }: { characterId: string }) {
   if (!character) return null;
   const factions = character.factionIds.map((id) => state.factions[id]).filter(Boolean);
 
-  const rels = relationshipsForCharacter(state, characterId);
+  const allRels = relationshipsForCharacter(state, characterId);
+  const sortedRels = [...allRels].sort((a, b) => Math.abs(b.value) - Math.abs(a.value));
+  const topRels = sortedRels.slice(0, 3);
+  const hiddenCount = sortedRels.length - topRels.length;
+
   const grouped = new Map<string, { name: string; color: string; names: string[] }>();
-  for (const r of rels) {
+  for (const r of topRels) {
     const band = valueToBand(r.value, state.settings.bands);
     const otherId = otherInRelationship(r, characterId);
     const other = state.characters[otherId];
@@ -54,6 +58,9 @@ export function NodeHoverCard({ characterId }: { characterId: string }) {
               <span>{g.names.join(", ")}</span>
             </div>
           ))}
+          {hiddenCount > 0 && (
+            <div className="mt-1 text-[var(--muted)]">+{hiddenCount} more</div>
+          )}
         </div>
       )}
       {recent.length > 0 && (

@@ -58,7 +58,7 @@ export type StoreActions = {
   setFactionAffinity: (a: string, b: string, affinity: number) => void;
 
   // Bulk operations
-  applyDegradeAll: (amount: number) => number;
+  applyDegradeAll: (amount: number) => { degraded: number; deleted: number };
 
   // Propagation
   setPendingPropagation: (p: StoreState["pendingPropagation"]) => void;
@@ -258,21 +258,27 @@ export const useStore = create<StoreState & StoreActions>()(
     applyDegradeAll: (amount) => {
       const deltas = computeDegradeDeltas(get().state.relationships, amount);
       const at = new Date().toISOString();
+      let deleted = 0;
       set((s) => {
         for (const d of deltas) {
           const rel = s.state.relationships[d.relationshipId];
           if (!rel) continue;
-          rel.value = d.valueAfter;
-          rel.history.unshift({
-            at,
-            delta: d.delta,
-            valueBefore: d.valueBefore,
-            valueAfter: d.valueAfter,
-            reason: "degrade-all",
-          });
+          if (d.valueAfter === 0) {
+            delete s.state.relationships[d.relationshipId];
+            deleted++;
+          } else {
+            rel.value = d.valueAfter;
+            rel.history.unshift({
+              at,
+              delta: d.delta,
+              valueBefore: d.valueBefore,
+              valueAfter: d.valueAfter,
+              reason: "degrade-all",
+            });
+          }
         }
       });
-      return deltas.length;
+      return { degraded: deltas.length - deleted, deleted };
     },
 
     setPendingPropagation: (p) =>

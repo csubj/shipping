@@ -12,6 +12,11 @@ export type GraphFilterState = {
   datePreset: DatePreset;
   customFrom: string;
   customTo: string;
+  /** abs-value range filter on Math.abs(rel.value); null = no bound */
+  absMin: number | null;
+  absMax: number | null;
+  absMinInclusive: boolean;
+  absMaxInclusive: boolean;
 };
 
 export function defaultFilterState(): GraphFilterState {
@@ -21,6 +26,10 @@ export function defaultFilterState(): GraphFilterState {
     datePreset: null,
     customFrom: "",
     customTo: "",
+    absMin: null,
+    absMax: null,
+    absMinInclusive: true,
+    absMaxInclusive: true,
   };
 }
 
@@ -69,7 +78,13 @@ export function GraphFilters({ filters, onChange }: Props) {
 
   const hasFactionFilter = filters.selectedFactionIds.size > 0 || !filters.showUnaffiliated;
   const hasDateFilter = filters.datePreset !== null;
-  const isActive = hasFactionFilter || hasDateFilter;
+  const hasAbsFilter = filters.absMin !== null || filters.absMax !== null;
+  const isActive = hasFactionFilter || hasDateFilter || hasAbsFilter;
+
+  const absLo = filters.absMin ?? 0;
+  const absHi = filters.absMax ?? 30;
+  const loPercent = (absLo / 30) * 100;
+  const hiPercent = (absHi / 30) * 100;
 
   function toggleFaction(fid: string) {
     const next = new Set(filters.selectedFactionIds);
@@ -106,7 +121,7 @@ export function GraphFilters({ filters, onChange }: Props) {
         Filters
         {isActive && (
           <span className="flex h-4 w-4 items-center justify-center rounded-full bg-indigo-500 text-[9px] font-bold text-white">
-            {(filters.selectedFactionIds.size > 0 ? 1 : 0) + (hasDateFilter ? 1 : 0)}
+            {(filters.selectedFactionIds.size > 0 ? 1 : 0) + (hasDateFilter ? 1 : 0) + (hasAbsFilter ? 1 : 0)}
           </span>
         )}
       </button>
@@ -227,6 +242,117 @@ export function GraphFilters({ filters, onChange }: Props) {
                 </label>
               </div>
             )}
+          </div>
+
+          <div className="mt-3 border-t border-[var(--border)]" />
+
+          {/* Relationship strength section */}
+          <div className="mt-3">
+            <div className="mb-2 flex items-center justify-between">
+              <span className="text-[11px] font-semibold uppercase tracking-wide text-[var(--muted)]">
+                Relationship Strength
+              </span>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={hasAbsFilter}
+                onClick={() => {
+                  if (hasAbsFilter) {
+                    onChange({ ...filters, absMin: null, absMax: null, absMinInclusive: true, absMaxInclusive: true });
+                  } else {
+                    onChange({ ...filters, absMin: 0, absMax: 30 });
+                  }
+                }}
+                className={
+                  "relative inline-flex h-4 w-7 flex-shrink-0 cursor-pointer items-center rounded-full transition-colors " +
+                  (hasAbsFilter ? "bg-indigo-500" : "bg-[var(--border)]")
+                }
+                title={hasAbsFilter ? "Disable strength filter" : "Enable strength filter"}
+              >
+                <span
+                  className={
+                    "inline-block h-3 w-3 rounded-full bg-white shadow transition-transform " +
+                    (hasAbsFilter ? "translate-x-3.5" : "translate-x-0.5")
+                  }
+                />
+              </button>
+            </div>
+
+            <div className={hasAbsFilter ? "" : "pointer-events-none select-none opacity-40"}>
+              {/* Dual-range slider */}
+              <div className="relative mx-1 mt-1 h-5">
+                <div
+                  className="pointer-events-none absolute inset-x-0 top-1/2 h-1 -translate-y-1/2 rounded-full"
+                  style={{
+                    background: `linear-gradient(to right, var(--border) ${loPercent}%, rgb(99 102 241) ${loPercent}%, rgb(99 102 241) ${hiPercent}%, var(--border) ${hiPercent}%)`,
+                  }}
+                />
+                <input
+                  type="range"
+                  min={0}
+                  max={30}
+                  step={1}
+                  value={absLo}
+                  onChange={(e) => {
+                    const v = Math.min(Number(e.target.value), absHi);
+                    onChange({ ...filters, absMin: v });
+                  }}
+                  className="pointer-events-none absolute inset-0 w-full appearance-none bg-transparent [&::-moz-range-thumb]:h-3.5 [&::-moz-range-thumb]:w-3.5 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-white [&::-moz-range-thumb]:bg-indigo-400 [&::-moz-range-track]:bg-transparent [&::-webkit-slider-runnable-track]:bg-transparent [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:bg-indigo-400 [&::-webkit-slider-thumb]:shadow"
+                />
+                <input
+                  type="range"
+                  min={0}
+                  max={30}
+                  step={1}
+                  value={absHi}
+                  onChange={(e) => {
+                    const v = Math.max(Number(e.target.value), absLo);
+                    onChange({ ...filters, absMax: v });
+                  }}
+                  className="pointer-events-none absolute inset-0 w-full appearance-none bg-transparent [&::-moz-range-thumb]:h-3.5 [&::-moz-range-thumb]:w-3.5 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-white [&::-moz-range-thumb]:bg-indigo-400 [&::-moz-range-track]:bg-transparent [&::-webkit-slider-runnable-track]:bg-transparent [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:bg-indigo-400 [&::-webkit-slider-thumb]:shadow"
+                />
+              </div>
+
+              {/* Value labels + inclusive/exclusive toggles */}
+              <div className="mt-1.5 flex items-center justify-between">
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => onChange({ ...filters, absMinInclusive: !filters.absMinInclusive })}
+                    className={
+                      "rounded border px-1 py-0.5 text-[9px] transition-colors " +
+                      (filters.absMinInclusive
+                        ? "border-indigo-400 bg-indigo-500/10 text-indigo-400"
+                        : "border-[var(--border)] text-[var(--muted)] hover:border-[var(--fg)]")
+                    }
+                    title={filters.absMinInclusive ? "Inclusive (≥) — click for exclusive (>)" : "Exclusive (>) — click for inclusive (≥)"}
+                  >
+                    {filters.absMinInclusive ? "≥" : ">"}
+                  </button>
+                  <span className="min-w-[1.25rem] text-center text-[10px] tabular-nums text-[var(--fg)]">
+                    {absLo}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="min-w-[1.25rem] text-center text-[10px] tabular-nums text-[var(--fg)]">
+                    {absHi}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => onChange({ ...filters, absMaxInclusive: !filters.absMaxInclusive })}
+                    className={
+                      "rounded border px-1 py-0.5 text-[9px] transition-colors " +
+                      (filters.absMaxInclusive
+                        ? "border-indigo-400 bg-indigo-500/10 text-indigo-400"
+                        : "border-[var(--border)] text-[var(--muted)] hover:border-[var(--fg)]")
+                    }
+                    title={filters.absMaxInclusive ? "Inclusive (≤) — click for exclusive (<)" : "Exclusive (<) — click for inclusive (≤)"}
+                  >
+                    {filters.absMaxInclusive ? "≤" : "<"}
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
 
           {isActive && (

@@ -28,6 +28,17 @@ type Props = {
   onEditCharacter: (characterId: string) => void;
 };
 
+function edgePassesAbsFilter(absVal: number, filters: GraphFilterState): boolean {
+  const { absMin, absMax, absMinInclusive, absMaxInclusive } = filters;
+  if (absMin !== null) {
+    if (absMinInclusive ? absVal < absMin : absVal <= absMin) return false;
+  }
+  if (absMax !== null) {
+    if (absMaxInclusive ? absVal > absMax : absVal >= absMax) return false;
+  }
+  return true;
+}
+
 function resolveFilterDates(filters: GraphFilterState): { from: Date | null; to: Date | null } {
   const now = new Date();
   if (filters.datePreset === "7d") {
@@ -141,18 +152,21 @@ function GraphInner({ onEditRelationship, onEditCharacter }: Props) {
 
   const edges = useMemo<Edge[]>(
     () =>
-      Object.values(relationships).map((r) => ({
-        id: r.id,
-        source: r.a,
-        target: r.b,
-        type: "relationship",
-        data: { relationshipId: r.id, onEdit: (id: string) => onEditRelationship(id) },
-        // Hide edge if either endpoint is hidden
-        hidden: visibleCharacterIds
+      Object.values(relationships).map((r) => {
+        const absVal = Math.abs(r.value);
+        const hiddenByEndpoint = visibleCharacterIds
           ? !visibleCharacterIds.has(r.a) || !visibleCharacterIds.has(r.b)
-          : false,
-      })),
-    [relationships, onEditRelationship, visibleCharacterIds],
+          : false;
+        return {
+          id: r.id,
+          source: r.a,
+          target: r.b,
+          type: "relationship",
+          data: { relationshipId: r.id, onEdit: (id: string) => onEditRelationship(id) },
+          hidden: hiddenByEndpoint || !edgePassesAbsFilter(absVal, filters),
+        };
+      }),
+    [relationships, onEditRelationship, visibleCharacterIds, filters],
   );
 
   const onNodesChange = useCallback(

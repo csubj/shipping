@@ -13,7 +13,10 @@ export function DegradeConfirmModal({
 }) {
   const defaultAmount = useStore((s) => s.state.settings.degrade.amount);
   const relCount = useStore(
-    (s) => Object.values(s.state.relationships).filter((r) => r.value !== 0).length,
+    (s) =>
+      Object.values(s.state.relationships).filter(
+        (r) => r.value !== 0 && r.value > -10 && r.value < 10,
+      ).length,
   );
   const apply = useStore((s) => s.applyDegradeAll);
   const pushToast = useStore((s) => s.pushToast);
@@ -24,8 +27,11 @@ export function DegradeConfirmModal({
   }, [open, defaultAmount]);
 
   const onConfirm = () => {
-    const n = apply(amount);
-    pushToast(`Degraded ${n} relationships toward neutral`);
+    const { degraded, deleted } = apply(amount);
+    const parts: string[] = [];
+    if (degraded > 0) parts.push(`degraded ${degraded}`);
+    if (deleted > 0) parts.push(`removed ${deleted}`);
+    pushToast(parts.length > 0 ? `${parts.join(", ")} relationship${degraded + deleted !== 1 ? "s" : ""}` : "No relationships changed");
     onOpenChange(false);
   };
 
@@ -40,7 +46,13 @@ export function DegradeConfirmModal({
             onChange={(e) => setAmount(Math.max(0, Number(e.target.value)))}
             className="inline-block w-20 align-baseline"
           />{" "}
-          toward neutral. Relationships already at 0 will not change.
+          toward neutral. Relationships that reach 0 will be deleted.
+        </p>
+        <p className="text-xs text-[var(--muted)]">
+          Only relationships with a value strictly between −10 and 10 are
+          affected. Stronger relationships (|value| ≥ 10) are considered
+          entrenched and will not degrade. Relationships that degrade to
+          exactly 0 are removed entirely.
         </p>
         <p className="text-xs text-[var(--muted)]">
           (This does not change the permanent default in Settings.)
