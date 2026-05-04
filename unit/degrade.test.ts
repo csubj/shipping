@@ -23,11 +23,11 @@ describe("computeDegradeDeltas", () => {
     expect(out).toHaveLength(0);
   });
   it("decrements by amount when |value| > amount", () => {
-    const out = computeDegradeDeltas({ p: r("p", 10), n: r("n", -10) }, 3);
+    const out = computeDegradeDeltas({ p: r("p", 8), n: r("n", -8) }, 3);
     const map = Object.fromEntries(out.map((d) => [d.relationshipId, d]));
     expect(map.p.delta).toBe(-3);
-    expect(map.p.valueAfter).toBe(7);
+    expect(map.p.valueAfter).toBe(5);
     expect(map.n.delta).toBe(3);
-    expect(map.n.valueAfter).toBe(-7);
+    expect(map.n.valueAfter).toBe(-5);
   });
 });

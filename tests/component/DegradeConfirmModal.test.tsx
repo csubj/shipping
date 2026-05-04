@@ -18,7 +18,7 @@ describe("DegradeConfirmModal", () => {
     useStore.getState().replaceState(next);
 
     render(<DegradeConfirmModal open={true} onOpenChange={() => {}} />);
-    expect(screen.getByText(/1/)).toBeInTheDocument();
+    expect(screen.getByText("1", { selector: "strong" })).toBeInTheDocument();
   });
 
   it("applies degrade on confirm", () => {
