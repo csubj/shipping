@@ -10,12 +10,15 @@ import {
   applyNodeChanges,
   ReactFlowProvider,
   useReactFlow,
+  ConnectionMode,
 } from "@xyflow/react";
 import { useStore } from "@/state/store";
 import { CharacterNode } from "./CharacterNode";
 import { RelationshipEdge } from "./RelationshipEdge";
+import { GraphFilters, defaultFilterState, type GraphFilterState } from "./GraphFilters";
 import { Button } from "@/components/ui/Button";
 import { computeForceLayout } from "@/hooks/useGraphLayout";
+import { charactersActiveInRange } from "@/state/selectors";
 
 const nodeTypes = { character: CharacterNode };
 const edgeTypes = { relationship: RelationshipEdge };
@@ -25,9 +28,30 @@ type Props = {
   onEditCharacter: (characterId: string) => void;
 };
 
+function resolveFilterDates(filters: GraphFilterState): { from: Date | null; to: Date | null } {
+  const now = new Date();
+  if (filters.datePreset === "7d") {
+    const from = new Date(now);
+    from.setDate(from.getDate() - 7);
+    return { from, to: now };
+  }
+  if (filters.datePreset === "30d") {
+    const from = new Date(now);
+    from.setDate(from.getDate() - 30);
+    return { from, to: now };
+  }
+  if (filters.datePreset === "custom") {
+    const from = filters.customFrom ? new Date(filters.customFrom) : null;
+    const to = filters.customTo ? new Date(`${filters.customTo}T23:59:59`) : null;
+    return { from, to };
+  }
+  return { from: null, to: null };
+}
+
 function GraphInner({ onEditRelationship, onEditCharacter }: Props) {
   const characters = useStore((s) => s.state.characters);
   const relationships = useStore((s) => s.state.relationships);
+  const appState = useStore((s) => s.state);
   const setCharacterPosition = useStore((s) => s.setCharacterPosition);
   const setSelectedNodes = useStore((s) => s.setSelectedNodes);
   const selected = useStore((s) => s.selectedNodeIds);
@@ -37,7 +61,51 @@ function GraphInner({ onEditRelationship, onEditCharacter }: Props) {
   const [showMinimap, setShowMinimap] = useState(true);
   const [addLinkMode, setAddLinkMode] = useState(false);
   const [linkFirst, setLinkFirst] = useState<string | null>(null);
+  const [filters, setFilters] = useState<GraphFilterState>(defaultFilterState);
   const flow = useReactFlow();
+
+  // Compute the set of visible character IDs given the current filters
+  const visibleCharacterIds = useMemo<Set<string> | null>(() => {
+    const { from, to } = resolveFilterDates(filters);
+    const byDate = charactersActiveInRange(appState, from, to);
+
+    const hasFactionFilter =
+      filters.selectedFactionIds.size > 0 || !filters.showUnaffiliated;
+
+    if (!byDate && !hasFactionFilter) return null; // show all
+
+    let ids: Set<string>;
+
+    // Start with date-filtered set or all characters
+    if (byDate) {
+      ids = new Set(byDate);
+    } else {
+      ids = new Set(Object.keys(characters));
+    }
+
+    // Apply faction filter (intersect)
+    if (hasFactionFilter) {
+      for (const cid of Array.from(ids)) {
+        const char = characters[cid];
+        if (!char) { ids.delete(cid); continue; }
+
+        const hasNoFaction = char.factionIds.length === 0;
+        if (hasNoFaction) {
+          if (!filters.showUnaffiliated) ids.delete(cid);
+          continue;
+        }
+
+        if (filters.selectedFactionIds.size > 0) {
+          const inSelected = char.factionIds.some((fid) =>
+            filters.selectedFactionIds.has(fid)
+          );
+          if (!inSelected) ids.delete(cid);
+        }
+      }
+    }
+
+    return ids;
+  }, [filters, appState, characters]);
 
   // Build nodes/edges from store
   const initialNodes = useMemo<Node[]>(
@@ -62,6 +130,15 @@ function GraphInner({ onEditRelationship, onEditCharacter }: Props) {
     setNodes(initialNodes);
   }
 
+  // Apply visibility filter to nodes and edges
+  const visibleNodes = useMemo<Node[]>(() => {
+    if (!visibleCharacterIds) return nodes;
+    return nodes.map((n) => ({
+      ...n,
+      hidden: !visibleCharacterIds.has(n.id),
+    }));
+  }, [nodes, visibleCharacterIds]);
+
   const edges = useMemo<Edge[]>(
     () =>
       Object.values(relationships).map((r) => ({
@@ -70,8 +147,12 @@ function GraphInner({ onEditRelationship, onEditCharacter }: Props) {
         target: r.b,
         type: "relationship",
         data: { relationshipId: r.id, onEdit: (id: string) => onEditRelationship(id) },
+        // Hide edge if either endpoint is hidden
+        hidden: visibleCharacterIds
+          ? !visibleCharacterIds.has(r.a) || !visibleCharacterIds.has(r.b)
+          : false,
       })),
-    [relationships, onEditRelationship],
+    [relationships, onEditRelationship, visibleCharacterIds],
   );
 
   const onNodesChange = useCallback(
@@ -88,6 +169,9 @@ function GraphInner({ onEditRelationship, onEditCharacter }: Props) {
 
   const onNodeClick = useCallback(
     (_e: React.MouseEvent, n: Node) => {
+      // #region agent log
+      fetch('http://127.0.0.1:7626/ingest/7c500993-eebb-43b3-8692-571e9bca6b0c',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'3f12cc'},body:JSON.stringify({sessionId:'3f12cc',location:'GraphView.tsx:onNodeClick',message:'onNodeClick fired',data:{nodeId:n.id,addLinkMode,linkFirst},hypothesisId:'H-D',timestamp:Date.now()})}).catch(()=>{});
+      // #endregion
       if (addLinkMode) {
         if (!linkFirst) {
           setLinkFirst(n.id);
@@ -107,7 +191,12 @@ function GraphInner({ onEditRelationship, onEditCharacter }: Props) {
   );
 
   const onNodeDoubleClick = useCallback(
-    (_e: React.MouseEvent, n: Node) => onEditCharacter(n.id),
+    (_e: React.MouseEvent, n: Node) => {
+      // #region agent log
+      fetch('http://127.0.0.1:7626/ingest/7c500993-eebb-43b3-8692-571e9bca6b0c',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'3f12cc'},body:JSON.stringify({sessionId:'3f12cc',location:'GraphView.tsx:onNodeDoubleClick',message:'onNodeDoubleClick fired',data:{nodeId:n.id},hypothesisId:'H-C',timestamp:Date.now()})}).catch(()=>{});
+      // #endregion
+      onEditCharacter(n.id);
+    },
     [onEditCharacter],
   );
 
@@ -115,7 +204,6 @@ function GraphInner({ onEditRelationship, onEditCharacter }: Props) {
     const positions = computeForceLayout({
       ...({ characters, relationships } as any),
     } as any);
-    // commit to store and update local nodes
     setNodes((nds) =>
       nds.map((n) => {
         const p = positions[n.id];
@@ -131,7 +219,7 @@ function GraphInner({ onEditRelationship, onEditCharacter }: Props) {
 
   return (
     <div className="h-full w-full relative">
-      <div className="absolute left-2 top-2 z-10 flex items-center gap-2 rounded border border-[var(--border)] bg-[var(--card)] p-1 shadow">
+      <div className="absolute left-2 top-2 z-10 flex flex-wrap items-center gap-2 rounded border border-[var(--border)] bg-[var(--card)] p-1 shadow">
         <Button
           size="sm"
           variant={addLinkMode ? "primary" : "ghost"}
@@ -156,15 +244,18 @@ function GraphInner({ onEditRelationship, onEditCharacter }: Props) {
           />
           Minimap
         </label>
+        <div className="h-6 w-px bg-[var(--border)]" />
+        <GraphFilters filters={filters} onChange={setFilters} />
       </div>
       <ReactFlow
-        nodes={nodes}
+        nodes={visibleNodes}
         edges={edges}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
         onNodesChange={onNodesChange}
         onNodeClick={onNodeClick}
         onNodeDoubleClick={onNodeDoubleClick}
+        connectionMode={ConnectionMode.Loose}
         fitView
         proOptions={{ hideAttribution: true }}
       >

@@ -66,6 +66,7 @@ body {
   max-width: 90vw;
   max-height: 90vh;
   overflow: auto;
+  z-index: 51;
 }
 
 /* Focus visible ring */
